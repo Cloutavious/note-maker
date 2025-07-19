@@ -4,10 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Notes and Question Paper Request Form</title>
-  <!-- Tailwind CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    /* Optional: Basic styling for preformatted output in email for better readability */
+    pre {
+        background-color: #f4f4f4;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
   <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
     <h2 class="text-2xl font-bold mb-6 text-center">Request Notes & Question Papers</h2>
     <form id="request-form" class="space-y-4">
@@ -50,7 +58,7 @@
           </label>
           <label class="inline-flex items-center">
             <input type="checkbox" name="format" value="Short" class="form-checkbox">
-            <span class="ml-2">Short</span>
+            <span class="ml-2">Short Answer</span>
           </label>
           <label class="inline-flex items-center">
             <input type="checkbox" name="format" value="True/False" class="form-checkbox">
@@ -62,29 +70,28 @@
           </label>
           <label class="inline-flex items-center">
             <input type="checkbox" name="format" value="Mixed" class="form-checkbox">
-            <span class="ml-2">Mixed</span>
+            <span class="ml-2">Mixed (Combination)</span>
           </label>
         </div>
       </div>
       <div>
-        <label for="notes_pages" class="block text-sm font-medium text-gray-700">Number of Pages for Notes</label>
-        <input type="number" id="notes_pages" name="notes_pages" min="1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter number of pages" required>
+        <label for="notes_pages" class="block text-sm font-medium text-gray-700">Desired Notes Length (Approx. Pages)</label>
+        <input type="number" id="notes_pages" name="notes_pages" min="1" max="20" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" value="5" required>
       </div>
       <div>
-        <label for="papers_pages" class="block text-sm font-medium text-gray-700">Number of Pages for Question Papers</label>
-        <input type="number" id="papers_pages" name="papers_pages" min="1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter number of pages" required>
+        <label for="papers_pages" class="block text-sm font-medium text-gray-700">Desired Question Paper Length (Approx. Pages)</label>
+        <input type="number" id="papers_pages" name="papers_pages" min="1" max="10" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" value="2" required>
       </div>
       <div>
-        <label for="email" class="block text-sm font-medium text-gray-700">Your Email</label>
+        <label for="email" class="block text-sm font-medium text-gray-700">Your Email (for delivery)</label>
         <input type="email" id="email" name="email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter your email" required>
       </div>
       <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700">Submit Request</button>
     </form>
-    <p id="form-message" class="mt-4 text-center text-green-600 hidden">Request sent successfully!</p>
+    <p id="form-message" class="mt-4 text-center text-green-600 hidden">Request sent successfully! Check your email.</p>
     <p id="form-error" class="mt-4 text-center text-red-600 hidden">Error sending request. Please try again.</p>
   </div>
 
-  <!-- EmailJS SDK -->
  <script>
   document.getElementById("request-form").addEventListener("submit", function (event) {
     event.preventDefault();
@@ -104,8 +111,17 @@
       email: document.getElementById("email").value
     };
 
-    // IMPORTANT: Replace this with YOUR Render backend service URL
-    const backendUrl = "https://student-helper.onrender.com/api/generate"; // <--- UPDATE THIS LINE WITH YOUR RENDER URL
+    // IMPORTANT: Replace this with YOUR Render backend service URL.
+    // It will look something like "https://your-service-name.onrender.com/api/generate"
+    const backendUrl = "https://student-helper-ndlk.onrender.com"; // <--- UPDATE THIS LINE WITH YOUR ACTUAL RENDER URL
+
+    // Show a loading indicator or disable button
+    const submitButton = document.querySelector('#request-form button[type="submit"]');
+    submitButton.textContent = "Sending Request...";
+    submitButton.disabled = true;
+    document.getElementById("form-message").classList.add("hidden");
+    document.getElementById("form-error").classList.add("hidden");
+
 
     fetch(backendUrl, {
       method: "POST",
@@ -124,14 +140,19 @@
       document.getElementById("form-message").classList.remove("hidden");
       document.getElementById("form-error").classList.add("hidden");
       document.getElementById("request-form").reset();
-      console.log("Success:", data); // Log success message
+      console.log("Success:", data);
     })
     .catch(err => {
-      console.error("Frontend error:", err); // Log the full error
-      const errorMessage = err.error ? err.error : "Error sending request. Please try again.";
+      console.error("Frontend error:", err);
+      const errorMessage = err.error ? err.error : "Error sending request. Please check your inputs and try again.";
       document.getElementById("form-error").textContent = errorMessage;
       document.getElementById("form-error").classList.remove("hidden");
       document.getElementById("form-message").classList.add("hidden");
+    })
+    .finally(() => {
+        // Re-enable button and reset text regardless of success or failure
+        submitButton.textContent = "Submit Request";
+        submitButton.disabled = false;
     });
   });
 </script>
