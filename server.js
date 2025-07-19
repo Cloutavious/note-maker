@@ -1,4 +1,3 @@
-```javascript
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -9,8 +8,6 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // --- Middleware ---
-// IMPORTANT: In a production environment, restrict CORS to your GitHub Pages domain for security.
-// For now, allowing all origins for easier testing.
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -25,7 +22,7 @@ const EMAIL_AUTH_PASS = process.env.EMAIL_AUTH_PASS; // Your Gmail App Password
 const transporter = nodemailer.createTransport({
     host: EMAIL_SERVICE_HOST,
     port: EMAIL_SERVICE_PORT,
-    secure: EMAIL_SERVICE_PORT === 465, // true for 465, false for other ports (like 587)
+    secure: EMAIL_SERVICE_PORT === 465,
     auth: {
         user: EMAIL_AUTH_USER,
         pass: EMAIL_AUTH_PASS,
@@ -45,26 +42,26 @@ app.post('/api/generate', async (req, res) => {
         return res.status(500).json({ error: "Server configuration error: Email credentials missing." });
     }
 
-    const promptForLLM = `
-    You are an educational content generator. Based on the student's request, provide comprehensive notes and a set of practice questions.
-    
-    Student Request Details:
-    School: ${school}
-    Grade: Grade ${grade}
-    Subject: ${subject}
-    Topic: ${topic}
-    Requested Notes Pages: ${notes_pages} (aim for this length if possible, generate detailed content)
-    Requested Question Paper Formats: ${format}
-    Requested Question Paper Pages: ${papers_pages} (aim for this length if possible, generate a good number of questions)
+    // Ensure the entire prompt string is enclosed in backticks (` `)
+    const promptForLLM = `You are an educational content generator. Based on the student's request, provide comprehensive notes and a set of practice questions.
+        
+Student Request Details:
+School: ${school}
+Grade: Grade ${grade}
+Subject: ${subject}
+Topic: ${topic}
+Requested Notes Pages: ${notes_pages} (aim for this length if possible, generate detailed content)
+Requested Question Paper Formats: ${format}
+Requested Question Paper Pages: ${papers_pages} (aim for this length if possible, generate a good number of questions)
 
-    ---
-    **Notes Section:**
-    (Provide detailed, educational notes for the specified topic and subject. Organize clearly with headings, subheadings, and bullet points. Include key concepts, definitions, formulas, examples, and explanations. Focus on comprehensive coverage suitable for the given grade level. The content should be extensive enough to fill approximately ${notes_pages} printed pages if formatted reasonably.)
+---
+**Notes Section:**
+(Provide detailed, educational notes for the specified topic and subject. Organize clearly with headings, subheadings, and bullet points. Include key concepts, definitions, formulas, examples, and explanations. Focus on comprehensive coverage suitable for the given grade level. The content should be extensive enough to fill approximately ${notes_pages} printed pages if formatted reasonably.)
 
-    ---
-    **Question Paper Section:**
-    (Create a varied question paper covering the specified subject and topic. Include questions in the specified formats: ${format}. For 'True/False' or 'Fill in the Blank', provide clear statements. For 'Structured' or 'Short', provide open-ended questions that require critical thinking or application of concepts. Aim for a sufficient number of questions to fill approximately ${papers_pages} printed pages. Provide questions only, followed by a separate 'Answer Key' section at the very end. Ensure questions are challenging but fair for the specified grade level.)
-    `;
+---
+**Question Paper Section:**
+(Create a varied question paper covering the specified subject and topic. Include questions in the specified formats: ${format}. For 'True/False' or 'Fill in the Blank', provide clear statements. For 'Structured' or 'Short', provide open-ended questions that require critical thinking or application of concepts. Aim for a sufficient number of questions to fill approximately ${papers_pages} printed pages. Provide questions only, followed by a separate 'Answer Key' section at the very end. Ensure questions are challenging but fair for the specified grade level.)
+`; // <--- Make sure this closing backtick is present and correctly placed
 
     try {
         // Call Google Gemini API
@@ -73,16 +70,14 @@ app.post('/api/generate', async (req, res) => {
             {
                 contents: [{ parts: [{ text: promptForLLM }] }],
                 generationConfig: {
-                    maxOutputTokens: 8192, // Max tokens for Gemini 1.5 Pro, ensures ample content
-                    temperature: 0.7 // Adjust for creativity vs. factualness (0.0 for more deterministic)
+                    maxOutputTokens: 8192,
+                    temperature: 0.7
                 }
             }
         );
 
-        // Extract content from Gemini's response
         const generatedContent = geminiResponse.data.candidates[0].content.parts[0].text;
 
-        // Simple parsing to separate Notes and Question Paper sections
         let notesContent = "Notes could not be extracted. Here is the full generated content:\n" + generatedContent;
         let questionPaperContent = "Question paper could not be extracted. Here is the full generated content:\n" + generatedContent;
 
@@ -116,7 +111,6 @@ app.post('/api/generate', async (req, res) => {
             }
         }
 
-        // 4. Send Email to Stapiso (your email)
         const mailOptionsToStapiso = {
             from: EMAIL_AUTH_USER,
             to: 'stapiso09@gmail.com',
@@ -144,10 +138,9 @@ app.post('/api/generate', async (req, res) => {
             `,
         };
 
-        // 5. Send Email to Student
         const mailOptionsToStudent = {
             from: EMAIL_AUTH_USER,
-            to: email, // Student's email
+            to: email,
             subject: `Your Requested Notes & Question Papers for ${subject}`,
             html: `
                 <p>Dear Student,</p>
@@ -186,13 +179,10 @@ app.post('/api/generate', async (req, res) => {
     }
 });
 
-// Basic route for the root to avoid "Cannot GET /"
 app.get('/', (req, res) => {
     res.send('Backend server is running. Send POST requests to /api/generate.');
 });
 
-// Start the server
 app.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
 });
-```
