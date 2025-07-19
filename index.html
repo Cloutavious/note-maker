@@ -111,8 +111,9 @@
       email: document.getElementById("email").value
     };
 
-    // IMPORTANT: Make sure this URL includes '/api/generate' at the end!
-    const backendUrl = "https://student-helper-ndlk.onrender.com"; // <--- CORRECTED THIS LINE
+    // IMPORTANT: Make sure this URL is your CORRECT Render backend service URL + /api/generate
+    // Based on previous discussions, it should be: "https://student-helper-ndlk.onrender.com/api/generate"
+    const backendUrl = "https://student-helper-ndlk.onrender.com/api/generate"; // <--- THIS IS THE CORRECTED LINE
 
     // Show a loading indicator or disable button
     const submitButton = document.querySelector('#request-form button[type="submit"]');
@@ -131,6 +132,7 @@
     })
     .then(res => {
         if (!res.ok) { // Check if the response status is not 2xx
+            // Try to parse the error response from the backend if available
             return res.json().then(errData => Promise.reject(errData));
         }
         return res.json();
@@ -143,6 +145,7 @@
     })
     .catch(err => {
       console.error("Frontend error:", err);
+      // Display a more specific error message if the backend provided one
       const errorMessage = err.error ? err.error : "Error sending request. Please check your inputs and try again.";
       document.getElementById("form-error").textContent = errorMessage;
       document.getElementById("form-error").classList.remove("hidden");
