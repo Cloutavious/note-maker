@@ -8,8 +8,15 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // --- Middleware ---
-app.use(cors());
-app.use(bodyParser.json());
+// Configure CORS to only allow requests from your GitHub Pages domain
+const corsOptions = {
+  origin: 'https://cloutavious.github.io', // Your GitHub Pages base domain
+  methods: ['POST'], // Only allow POST requests for your API endpoint
+  optionsSuccessStatus: 200 // For older browsers
+};
+app.use(cors(corsOptions)); // Apply the specific CORS options
+
+app.use(bodyParser.json()); // To parse JSON request bodies
 
 // --- Environment Variables (Will be set on Render Dashboard) ---
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
@@ -22,7 +29,7 @@ const EMAIL_AUTH_PASS = process.env.EMAIL_AUTH_PASS; // Your Gmail App Password
 const transporter = nodemailer.createTransport({
     host: EMAIL_SERVICE_HOST,
     port: EMAIL_SERVICE_PORT,
-    secure: EMAIL_SERVICE_PORT === 465,
+    secure: EMAIL_SERVICE_PORT === 465, // true for 465, false for other ports (like 587)
     auth: {
         user: EMAIL_AUTH_USER,
         pass: EMAIL_AUTH_PASS,
@@ -78,6 +85,7 @@ Requested Question Paper Pages: ${papers_pages} (aim for this length if possible
 
         const generatedContent = geminiResponse.data.candidates[0].content.parts[0].text;
 
+        // Simple parsing to separate Notes and Question Paper sections
         let notesContent = "Notes could not be extracted. Here is the full generated content:\n" + generatedContent;
         let questionPaperContent = "Question paper could not be extracted. Here is the full generated content:\n" + generatedContent;
 
@@ -111,6 +119,7 @@ Requested Question Paper Pages: ${papers_pages} (aim for this length if possible
             }
         }
 
+        // 4. Send Email to Stapiso (your email)
         const mailOptionsToStapiso = {
             from: EMAIL_AUTH_USER,
             to: 'stapiso09@gmail.com',
@@ -138,9 +147,10 @@ Requested Question Paper Pages: ${papers_pages} (aim for this length if possible
             `,
         };
 
+        // 5. Send Email to Student
         const mailOptionsToStudent = {
             from: EMAIL_AUTH_USER,
-            to: email,
+            to: email, // Student's email
             subject: `Your Requested Notes & Question Papers for ${subject}`,
             html: `
                 <p>Dear Student,</p>
@@ -179,10 +189,12 @@ Requested Question Paper Pages: ${papers_pages} (aim for this length if possible
     }
 });
 
+// Basic route for the root to avoid "Cannot GET /"
 app.get('/', (req, res) => {
     res.send('Backend server is running. Send POST requests to /api/generate.');
 });
 
+// Start the server
 app.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
 });
