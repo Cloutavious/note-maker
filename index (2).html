@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Notes and Question Paper Request Form</title>
+  <!-- Tailwind CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center">Request Notes & Question Papers</h2>
+    <form id="request-form" class="space-y-4">
+      <div>
+        <label for="school" class="block text-sm font-medium text-gray-700">School</label>
+        <input type="text" id="school" name="school" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter your school" required>
+      </div>
+      <div>
+        <label for="grade" class="block text-sm font-medium text-gray-700">Grade</label>
+        <select id="grade" name="grade" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required>
+          <option value="" disabled selected>Select your grade</option>
+          <option value="1">Grade 1</option>
+          <option value="2">Grade 2</option>
+          <option value="3">Grade 3</option>
+          <option value="4">Grade 4</option>
+          <option value="5">Grade 5</option>
+          <option value="6">Grade 6</option>
+          <option value="7">Grade 7</option>
+          <option value="8">Grade 8</option>
+          <option value="9">Grade 9</option>
+          <option value="10">Grade 10</option>
+          <option value="11">Grade 11</option>
+          <option value="12">Grade 12</option>
+        </select>
+      </div>
+      <div>
+        <label for="subject" class="block text-sm font-medium text-gray-700">Subject</label>
+        <input type="text" id="subject" name="subject" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter subject (e.g., Math)" required>
+      </div>
+      <div>
+        <label for="topic" class="block text-sm font-medium text-gray-700">Topic</label>
+        <input type="text" id="topic" name="topic" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter topic (e.g., Algebra)" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Question Paper Format</label>
+        <div class="mt-2 space-y-2">
+          <label class="inline-flex items-center">
+            <input type="checkbox" name="format" value="Structured" class="form-checkbox">
+            <span class="ml-2">Structured</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="checkbox" name="format" value="Short" class="form-checkbox">
+            <span class="ml-2">Short</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="checkbox" name="format" value="True/False" class="form-checkbox">
+            <span class="ml-2">True/False</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="checkbox" name="format" value="Fill in the Blank" class="form-checkbox">
+            <span class="ml-2">Fill in the Blank</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="checkbox" name="format" value="Mixed" class="form-checkbox">
+            <span class="ml-2">Mixed</span>
+          </label>
+        </div>
+      </div>
+      <div>
+        <label for="notes_pages" class="block text-sm font-medium text-gray-700">Number of Pages for Notes</label>
+        <input type="number" id="notes_pages" name="notes_pages" min="1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter number of pages" required>
+      </div>
+      <div>
+        <label for="papers_pages" class="block text-sm font-medium text-gray-700">Number of Pages for Question Papers</label>
+        <input type="number" id="papers_pages" name="papers_pages" min="1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter number of pages" required>
+      </div>
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-700">Your Email</label>
+        <input type="email" id="email" name="email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter your email" required>
+      </div>
+      <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700">Submit Request</button>
+    </form>
+    <p id="form-message" class="mt-4 text-center text-green-600 hidden">Request sent successfully!</p>
+    <p id="form-error" class="mt-4 text-center text-red-600 hidden">Error sending request. Please try again.</p>
+  </div>
+
+  <!-- EmailJS SDK -->
+ <script>
+  document.getElementById("request-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+
+    const formats = Array.from(document.querySelectorAll('input[name="format"]:checked'))
+      .map(input => input.value)
+      .join(", ") || "None selected";
+
+    const formData = {
+      school: document.getElementById("school").value,
+      grade: document.getElementById("grade").value,
+      subject: document.getElementById("subject").value,
+      topic: document.getElementById("topic").value,
+      format: formats,
+      notes_pages: document.getElementById("notes_pages").value,
+      papers_pages: document.getElementById("papers_pages").value,
+      email: document.getElementById("email").value
+    };
+
+    // IMPORTANT: Replace this with YOUR Render backend service URL
+    const backendUrl = "https://student-ai-helper.onrender.com/api/generate"; // <--- UPDATE THIS LINE WITH YOUR RENDER URL
+
+    fetch(backendUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(formData)
+    })
+    .then(res => {
+        if (!res.ok) { // Check if the response status is not 2xx
+            return res.json().then(errData => Promise.reject(errData));
+        }
+        return res.json();
+    })
+    .then(data => {
+      document.getElementById("form-message").classList.remove("hidden");
+      document.getElementById("form-error").classList.add("hidden");
+      document.getElementById("request-form").reset();
+      console.log("Success:", data); // Log success message
+    })
+    .catch(err => {
+      console.error("Frontend error:", err); // Log the full error
+      const errorMessage = err.error ? err.error : "Error sending request. Please try again.";
+      document.getElementById("form-error").textContent = errorMessage;
+      document.getElementById("form-error").classList.remove("hidden");
+      document.getElementById("form-message").classList.add("hidden");
+    });
+  });
+</script>
+</body>
+</html>

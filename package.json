@@ -1,0 +1,21 @@
+```json
+{
+  "name": "grok-study-helper-backend",
+  "version": "1.0.0",
+  "description": "Backend for student notes and question paper requests using Google Gemini API and email.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "nodemailer": "^6.9.14"
+  },
+  "keywords": [],
+  "author": "Your Name",
+  "license": "ISC"
+}
+```
