@@ -14,6 +14,14 @@
         overflow-x: auto;
     }
   </style>
+  <script type="text/javascript" src="https://cdn.emailjs.com/sdk/2.3.2/email.min.js"></script>
+  <script type="text/javascript">
+    (function() {
+      // Initialize EmailJS with your Public Key
+      // You'll get this from your EmailJS dashboard: Account -> API Keys
+      emailjs.init("dcXh3C-JmfcsSOOIb"); // <--- REPLACE WITH YOUR ACTUAL EMAILJS PUBLIC KEY
+    })();
+  </script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
   <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
@@ -111,17 +119,14 @@
       email: document.getElementById("email").value
     };
 
-    // IMPORTANT: This URL MUST be your CORRECT Render backend service URL + /api/generate
-    // Based on previous discussions, it should be: "https://student-helper-ndlk.onrender.com/api/generate"
-    const backendUrl = "https://student-helper-ndlk.onrender.com/api/generate"; // <-- CORRECTED THIS LINE
-
-    // Show a loading indicator or disable button
     const submitButton = document.querySelector('#request-form button[type="submit"]');
     submitButton.textContent = "Sending Request...";
     submitButton.disabled = true;
     document.getElementById("form-message").classList.add("hidden");
     document.getElementById("form-error").classList.add("hidden");
 
+    // Correct backend URL to get content from your Render service
+    const backendUrl = "https://student-helper-ndlk.onrender.com/api/generate";
 
     fetch(backendUrl, {
       method: "POST",
@@ -131,21 +136,51 @@
       body: JSON.stringify(formData)
     })
     .then(res => {
-        if (!res.ok) { // Check if the response status is not 2xx
-            // Try to parse the error response from the backend if available
+        if (!res.ok) {
+            // If backend responds with an error, parse it and reject the promise
             return res.json().then(errData => Promise.reject(errData));
         }
-        return res.json();
+        return res.json(); // Parse the successful response from backend
     })
     .then(data => {
-      document.getElementById("form-message").classList.remove("hidden");
-      document.getElementById("form-error").classList.add("hidden");
-      document.getElementById("request-form").reset();
-      console.log("Success:", data);
+      // Check if generatedText is present from backend's response
+      if (data.generatedText) {
+        // Prepare data for EmailJS template
+        const templateParams = {
+          to_email: formData.email,
+          from_school: formData.school,
+          from_grade: formData.grade,
+          from_subject: formData.subject,
+          from_topic: formData.topic,
+          generated_content: data.generatedText // This is the AI-generated content
+        };
+
+        // Send email using EmailJS
+        // REPLACE 'YOUR_EMAILJS_SERVICE_ID' and 'YOUR_EMAILJS_TEMPLATE_ID'
+        emailjs.send('service_h4lqsa6', 'template_zxwaykn', templateParams)
+          .then(function(response) {
+            console.log('EmailJS Success!', response.status, response.text);
+            document.getElementById("form-message").classList.remove("hidden");
+            document.getElementById("form-error").classList.add("hidden");
+            document.getElementById("request-form").reset(); // Reset form on success
+          }, function(error) {
+            console.error('EmailJS Failed...', error);
+            document.getElementById("form-error").textContent = "Error sending email via EmailJS. Please check your EmailJS setup.";
+            document.getElementById("form-error").classList.remove("hidden");
+            document.getElementById("form-message").classList.add("hidden");
+          });
+
+      } else {
+        // This case implies backend didn't return generatedText as expected
+        console.error("Backend did not return generated content.");
+        document.getElementById("form-error").textContent = "Error processing request: No content received from backend.";
+        document.getElementById("form-error").classList.remove("hidden");
+        document.getElementById("form-message").classList.add("hidden");
+      }
     })
     .catch(err => {
-      console.error("Frontend error:", err);
-      // Display a more specific error message if the backend provided one
+      // Catch any errors from the fetch call itself or errors propagated from backend
+      console.error("Frontend fetch error or backend general error:", err);
       const errorMessage = err.error ? err.error : "Error sending request. Please check your inputs and try again.";
       document.getElementById("form-error").textContent = errorMessage;
       document.getElementById("form-error").classList.remove("hidden");
