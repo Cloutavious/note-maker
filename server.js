@@ -13,9 +13,10 @@ const port = process.env.PORT || 3000;
 
 // Enable CORS for your GitHub Pages frontend
 app.use(cors({
-    origin: 'https://cloutavious.github.io/website.github.io/', // Ensure this matches your GitHub Pages URL
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
+     origin: 'https://cloutavious.github.io', // <--- THIS IS WHERE YOUR GITHUB PAGES ORIGIN GOES
+  methods: ['POST', 'GET'],
+  allowedHeaders: ['Content-Type'],
+  optionsSuccessStatus: 200
 }));
 
 app.use(bodyParser.json());
