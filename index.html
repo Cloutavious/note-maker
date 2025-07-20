@@ -97,7 +97,7 @@
     // Wait for EmailJS to be available
     function initEmailJS() {
       if (typeof emailjs !== 'undefined') {
-        emailjs.init("dcXh3C-JmfcsSOOIb");
+        emailjs.init("SZtnPFlIhtW6GmA5z");
         console.log('EmailJS initialized successfully');
       } else {
         setTimeout(initEmailJS, 100); // Try again in 100ms
@@ -159,7 +159,7 @@
           generated_content: data.generatedText
         };
 
-        emailjs.send('service_h4lqsa6', 'template_h4i0frr', templateParams)
+        emailjs.send('service_h4lqsa6', 'template_7tnvgw1', templateParams)
           .then(function(response) {
             console.log('EmailJS Success!', response.status, response.text);
             document.getElementById("form-message").classList.remove("hidden");
