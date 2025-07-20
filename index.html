@@ -111,9 +111,9 @@
       email: document.getElementById("email").value
     };
 
-    // IMPORTANT: Make sure this URL is your CORRECT Render backend service URL + /api/generate
+    // IMPORTANT: This URL MUST be your CORRECT Render backend service URL + /api/generate
     // Based on previous discussions, it should be: "https://student-helper-ndlk.onrender.com/api/generate"
-    const backendUrl = "https://student-helper-ndlk.onrender.com/api/generate"; // <--- THIS IS THE CORRECTED LINE
+    const backendUrl = "https://student-helper-ndlk.onrender.com/api/generate"; // <-- CORRECTED THIS LINE
 
     // Show a loading indicator or disable button
     const submitButton = document.querySelector('#request-form button[type="submit"]');
