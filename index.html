@@ -46,6 +46,10 @@
         <input type="text" id="subject" name="subject" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter subject (e.g., Math)" required>
       </div>
       <div>
+        <label for="topic" class="block text-sm font-medium text-gray-700">Topic</label>
+        <input type="text" id="topic" name="topic" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter topic (e.g., Algebra)" required>
+      </div>
+      <div>
         <label class="block text-sm font-medium text-gray-700">Question Paper Format</label>
         <div class="mt-2 space-y-2">
           <label class="inline-flex items-center">
@@ -91,10 +95,8 @@
   <script type="text/javascript" src="https://cdn.emailjs.com/sdk/v4/email.min.js"></script>
   <script type="text/javascript">
     // Initialize EmailJS AFTER the SDK script has loaded
-    // This function will now run only after the DOM is fully loaded, ensuring emailjs is defined.
     document.addEventListener('DOMContentLoaded', function() {
-        // YOUR EMAILJS PUBLIC KEY IS INSERTED HERE
-        emailjs.init("dcXh3C-JmfcsSOOIb");
+        emailjs.init("dcXh3C-JmfcsSOOIb"); // YOUR EMAILJS PUBLIC KEY
     });
   </script>
 
@@ -151,8 +153,7 @@
         };
 
         // Send email using EmailJS
-        // YOUR EMAILJS SERVICE ID AND TEMPLATE ID ARE INSERTED HERE
-        emailjs.send('service_h4lqsa6', 'template_h4i0frr', templateParams)
+        emailjs.send('service_h4lqsa6', 'template_h4i0frr', templateParams) // YOUR EMAILJS SERVICE ID AND TEMPLATE ID
           .then(function(response) {
             console.log('EmailJS Success!', response.status, response.text);
             document.getElementById("form-message").classList.remove("hidden");
