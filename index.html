@@ -14,7 +14,7 @@
         overflow-x: auto;
     }
   </style>
-  </head>
+</head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
   <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
     <h2 class="text-2xl font-bold mb-6 text-center">Request Notes & Question Papers</h2>
@@ -44,10 +44,6 @@
       <div>
         <label for="subject" class="block text-sm font-medium text-gray-700">Subject</label>
         <input type="text" id="subject" name="subject" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter subject (e.g., Math)" required>
-      </div>
-      <div>
-        <label for="topic" class="block text-sm font-medium text-gray-700">Topic</label>
-        <input type="text" id="topic" name="topic" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter topic (e.g., Algebra)" required>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700">Question Paper Format</label>
@@ -97,7 +93,8 @@
     // Initialize EmailJS AFTER the SDK script has loaded
     // This function will now run only after the DOM is fully loaded, ensuring emailjs is defined.
     document.addEventListener('DOMContentLoaded', function() {
-        emailjs.init("dcXh3C-JmfcsSOOIb"); // <--- REPLACE WITH YOUR ACTUAL EMAILJS PUBLIC KEY
+        // YOUR EMAILJS PUBLIC KEY IS INSERTED HERE
+        emailjs.init("dcXh3C-JmfcsSOOIb");
     });
   </script>
 
@@ -154,8 +151,8 @@
         };
 
         // Send email using EmailJS
-        // REPLACE 'YOUR_EMAILJS_SERVICE_ID' and 'YOUR_EMAILJS_TEMPLATE_ID'
-        emailjs.send('service_h4lqsa6', 'template_zxwaykn', templateParams)
+        // YOUR EMAILJS SERVICE ID AND TEMPLATE ID ARE INSERTED HERE
+        emailjs.send('service_h4lqsa6', 'template_h4i0frr', templateParams)
           .then(function(response) {
             console.log('EmailJS Success!', response.status, response.text);
             document.getElementById("form-message").classList.remove("hidden");
@@ -163,7 +160,6 @@
             document.getElementById("request-form").reset();
           }, function(error) {
             console.error('EmailJS Failed...', error);
-            // This error 'r' is still often related to incorrect EmailJS IDs or template issues.
             document.getElementById("form-error").textContent = "Error sending email via EmailJS. Please check your EmailJS setup.";
             document.getElementById("form-error").classList.remove("hidden");
             document.getElementById("form-message").classList.add("hidden");
