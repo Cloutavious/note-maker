@@ -44,7 +44,6 @@
         <label for="subject" class="block text-sm font-medium text-gray-700">Subject</label>
         <input type="text" id="subject" name="subject" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter subject (e.g., Math)" required>
       </div>
-      <!-- ADDED: Missing topic field -->
       <div>
         <label for="topic" class="block text-sm font-medium text-gray-700">Topic</label>
         <input type="text" id="topic" name="topic" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter specific topic (e.g., Algebra, Photosynthesis)" required>
@@ -92,76 +91,72 @@
     <p id="form-error" class="mt-4 text-center text-red-600 hidden">Error sending request. Please try again.</p>
   </div>
 
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script type="text/javascript">
-    // Wait for EmailJS to be available
-    function initEmailJS() {
-      if (typeof emailjs !== 'undefined') {
-        emailjs.init({
-          publicKey: "SZtnPFlIhtW6GmA5z"
-        });
-        console.log('EmailJS initialized successfully');
-      } else {
-        setTimeout(initEmailJS, 100); // Try again in 100ms
-      }
-    }
-    
-    // Start trying to initialize EmailJS
-    initEmailJS();
-  </script>
-
+  <!-- EmailJS SDK v4 - Latest version -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  
   <script>
-  document.getElementById("request-form").addEventListener("submit", function (event) {
-    event.preventDefault();
+    // Initialize EmailJS when the page loads
+    (function() {
+      emailjs.init({
+        publicKey: "SZtnPFlIhtW6GmA5z"
+      });
+      console.log('EmailJS initialized successfully');
+    })();
 
-    const formats = Array.from(document.querySelectorAll('input[name="format"]:checked'))
-      .map(input => input.value)
-      .join(", ") || "None selected";
+    document.getElementById("request-form").addEventListener("submit", function (event) {
+      event.preventDefault();
 
-    const formData = {
-      school: document.getElementById("school").value,
-      grade: document.getElementById("grade").value,
-      subject: document.getElementById("subject").value,
-      topic: document.getElementById("topic").value,
-      format: formats,
-      notes_pages: document.getElementById("notes_pages").value,
-      papers_pages: document.getElementById("papers_pages").value,
-      email: document.getElementById("email").value
-    };
+      const formats = Array.from(document.querySelectorAll('input[name="format"]:checked'))
+        .map(input => input.value)
+        .join(", ") || "None selected";
 
-    const submitButton = document.querySelector('#request-form button[type="submit"]');
-    submitButton.textContent = "Sending Request...";
-    submitButton.disabled = true;
-    document.getElementById("form-message").classList.add("hidden");
-    document.getElementById("form-error").classList.add("hidden");
+      const formData = {
+        school: document.getElementById("school").value,
+        grade: document.getElementById("grade").value,
+        subject: document.getElementById("subject").value,
+        topic: document.getElementById("topic").value,
+        format: formats,
+        notes_pages: document.getElementById("notes_pages").value,
+        papers_pages: document.getElementById("papers_pages").value,
+        email: document.getElementById("email").value
+      };
 
-    const backendUrl = "https://student-helper-ndlk.onrender.com/api/generate";
+      const submitButton = document.querySelector('#request-form button[type="submit"]');
+      submitButton.textContent = "Sending Request...";
+      submitButton.disabled = true;
+      document.getElementById("form-message").classList.add("hidden");
+      document.getElementById("form-error").classList.add("hidden");
 
-    fetch(backendUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(formData)
-    })
-    .then(res => {
-        if (!res.ok) {
-            return res.json().then(errData => Promise.reject(errData));
-        }
-        return res.json();
-    })
-    .then(data => {
-      if (data.generatedText) {
-        const templateParams = {
-          to_email: formData.email,
-          from_school: formData.school,
-          from_grade: formData.grade,
-          from_subject: formData.subject,
-          from_topic: formData.topic,
-          generated_content: data.generatedText
-        };
+      const backendUrl = "https://student-helper-ndlk.onrender.com/api/generate";
 
-        emailjs.send('service_h4lqsa6', 'template_7tnvgw1', templateParams)
+      fetch(backendUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
+      })
+      .then(res => {
+          if (!res.ok) {
+              return res.json().then(errData => Promise.reject(errData));
+          }
+          return res.json();
+      })
+      .then(data => {
+        if (data.generatedText) {
+          const templateParams = {
+            to_email: formData.email,
+            from_school: formData.school,
+            from_grade: formData.grade,
+            from_subject: formData.subject,
+            from_topic: formData.topic,
+            generated_content: data.generatedText
+          };
+
+          // Use the new EmailJS v4 syntax with publicKey in options
+          emailjs.send('service_h4lqsa6', 'template_7tnvgw1', templateParams, {
+            publicKey: 'SZtnPFlIhtW6GmA5z'
+          })
           .then(function(response) {
             console.log('EmailJS Success!', response.status, response.text);
             document.getElementById("form-message").classList.remove("hidden");
@@ -174,25 +169,25 @@
             document.getElementById("form-message").classList.add("hidden");
           });
 
-      } else {
-        console.error("Backend did not return generated content.");
-        document.getElementById("form-error").textContent = "Error processing request: No content received from backend.";
+        } else {
+          console.error("Backend did not return generated content.");
+          document.getElementById("form-error").textContent = "Error processing request: No content received from backend.";
+          document.getElementById("form-error").classList.remove("hidden");
+          document.getElementById("form-message").classList.add("hidden");
+        }
+      })
+      .catch(err => {
+        console.error("Frontend fetch error or backend general error:", err);
+        const errorMessage = err.error ? err.error : "Error sending request. Please check your inputs and try again.";
+        document.getElementById("form-error").textContent = errorMessage;
         document.getElementById("form-error").classList.remove("hidden");
         document.getElementById("form-message").classList.add("hidden");
-      }
-    })
-    .catch(err => {
-      console.error("Frontend fetch error or backend general error:", err);
-      const errorMessage = err.error ? err.error : "Error sending request. Please check your inputs and try again.";
-      document.getElementById("form-error").textContent = errorMessage;
-      document.getElementById("form-error").classList.remove("hidden");
-      document.getElementById("form-message").classList.add("hidden");
-    })
-    .finally(() => {
-        submitButton.textContent = "Submit Request";
-        submitButton.disabled = false;
+      })
+      .finally(() => {
+          submitButton.textContent = "Submit Request";
+          submitButton.disabled = false;
+      });
     });
-  });
-</script>
+  </script>
 </body>
 </html>
