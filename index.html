@@ -6,7 +6,6 @@
   <title>Student Notes and Question Paper Request Form</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    /* Optional: Basic styling for preformatted output in email for better readability */
     pre {
         background-color: #f4f4f4;
         padding: 10px;
@@ -45,9 +44,10 @@
         <label for="subject" class="block text-sm font-medium text-gray-700">Subject</label>
         <input type="text" id="subject" name="subject" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter subject (e.g., Math)" required>
       </div>
+      <!-- ADDED: Missing topic field -->
       <div>
         <label for="topic" class="block text-sm font-medium text-gray-700">Topic</label>
-        <input type="text" id="topic" name="topic" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter topic (e.g., Algebra)" required>
+        <input type="text" id="topic" name="topic" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Enter specific topic (e.g., Algebra, Photosynthesis)" required>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700">Question Paper Format</label>
@@ -94,9 +94,8 @@
 
   <script type="text/javascript" src="https://cdn.emailjs.com/sdk/v4/email.min.js"></script>
   <script type="text/javascript">
-    // Initialize EmailJS AFTER the SDK script has loaded
     document.addEventListener('DOMContentLoaded', function() {
-        emailjs.init("dcXh3C-JmfcsSOOIb"); // YOUR EMAILJS PUBLIC KEY
+        emailjs.init("dcXh3C-JmfcsSOOIb");
     });
   </script>
 
@@ -125,7 +124,6 @@
     document.getElementById("form-message").classList.add("hidden");
     document.getElementById("form-error").classList.add("hidden");
 
-    // Correct backend URL to get content from your Render service
     const backendUrl = "https://student-helper-ndlk.onrender.com/api/generate";
 
     fetch(backendUrl, {
@@ -152,8 +150,7 @@
           generated_content: data.generatedText
         };
 
-        // Send email using EmailJS
-        emailjs.send('service_h4lqsa6', 'template_h4i0frr', templateParams) // YOUR EMAILJS SERVICE ID AND TEMPLATE ID
+        emailjs.send('service_h4lqsa6', 'template_h4i0frr', templateParams)
           .then(function(response) {
             console.log('EmailJS Success!', response.status, response.text);
             document.getElementById("form-message").classList.remove("hidden");
