@@ -3,41 +3,42 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
-
-// Import the Anthropic SDK
-const Anthropic = require('@anthropic-ai/sdk');
+// const nodemailer = require('nodemailer'); // REMOVED: No longer using Nodemailer
+const Anthropic = require('@anthropic-ai/sdk'); // Using Anthropic Claude API
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS for your GitHub Pages frontend
-app.use(cors({
-     origin: 'https://cloutavious.github.io', // <--- THIS IS WHERE YOUR GITHUB PAGES ORIGIN GOES
-  methods: ['POST', 'GET'],
-  allowedHeaders: ['Content-Type'],
-  optionsSuccessStatus: 200
-}));
+// --- CORS Configuration ---
+// This is critical to allow your GitHub Pages frontend to communicate with your Render backend.
+const corsOptions = {
+  origin: 'https://cloutavious.github.io', // Your EXACT GitHub Pages URL
+  methods: ['GET', 'POST'], // Allow both GET and POST requests
+  allowedHeaders: ['Content-Type'], // Allow Content-Type header
+  optionsSuccessStatus: 200 // For older browsers
+};
+app.use(cors(corsOptions)); // Apply the specific CORS options middleware
 
 app.use(bodyParser.json());
 
 // Initialize the Anthropic client using the ANTHROPIC_API_KEY environment variable
 const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY, // Reads from the environment variable
+    apiKey: process.env.ANTHROPIC_API_KEY, // Reads from the environment variable set on Render
 });
 
-// Nodemailer transporter setup (make sure these are also in your Render env variables)
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_AUTH_USER,
-        pass: process.env.EMAIL_AUTH_PASS
-    }
-});
+// REMOVED: Nodemailer transporter setup (no longer sending email from backend)
+// const transporter = nodemailer.createTransport({
+//     service: 'gmail',
+//     auth: {
+//         user: process.env.EMAIL_AUTH_USER,
+//         pass: process.env.EMAIL_AUTH_PASS
+//     }
+// });
 
 app.post('/api/generate', async (req, res) => {
     const { school, grade, subject, topic, format, notes_pages, papers_pages, email } = req.body;
 
+    // Basic validation
     if (!school || !grade || !subject || !topic || !notes_pages || !papers_pages || !email) {
         return res.status(400).json({ error: 'All form fields are required.' });
     }
@@ -70,8 +71,8 @@ app.post('/api/generate', async (req, res) => {
 
         // Make the API call to Claude
         const response = await anthropic.messages.create({
-            model: "claude-3-7-sonnet-20250219", // You can choose "claude-3-opus-20240229" for highest quality, "claude-3-haiku-20240307" for fastest, or "claude-3-5-sonnet-20241022" as a good balance.
-            max_tokens: 4000, // Adjust max_tokens based on expected output length (Claude tokens are different from Gemini/OpenAI). 4000 is a good starting point for a few pages.
+            model: "claude-3-7-sonnet-20250219", // You can change this model if desired
+            max_tokens: 4000, // Adjust based on expected output length
             messages: [{
                 role: "user",
                 content: prompt
@@ -79,36 +80,16 @@ app.post('/api/generate', async (req, res) => {
         });
 
         // Extract the generated text from Claude's response
-        const generatedContent = response.content[0].text; // Claude's response content is an array
+        const generatedContent = response.content[0].text;
 
-        // Send content via email
-        const mailOptions = {
-            from: process.env.EMAIL_AUTH_USER,
-            to: email,
-            subject: `Your Requested Notes & Question Paper for ${subject} - ${topic} (Grade ${grade})`,
-            html: `
-                <p>Dear student,</p>
-                <p>Here are your requested notes and question paper:</p>
-                <pre>${generatedContent}</pre>
-                <p>Best regards,</p>
-                <p>Your Student Helper</p>
-            `
-        };
-
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Email sending error:', error);
-                // Important: Only send 500 status if email sending is critical AND it's a server error
-                // Otherwise, you might still want to return 200 if content was generated but email failed
-                return res.status(500).json({ error: 'Failed to send email with generated content. Please check server logs.' });
-            } else {
-                console.log('Email sent: ' + info.response);
-                res.status(200).json({ message: 'Notes and question paper sent to your email!' });
-            }
+        // Send the generated content back to the frontend
+        res.status(200).json({
+            message: 'Content generated successfully!',
+            generatedText: generatedContent // Key to send content to frontend
         });
 
     } catch (error) {
-        console.error('Error processing request:', error.response ? error.response.data : error.message);
+        console.error('Error processing request in backend:', error.response ? error.response.data : error.message);
         const errorMessage = error.response && error.response.data && error.response.data.error && error.response.data.error.message
             ? error.response.data.error.message
             : 'Error generating content. Please try again.';
@@ -116,6 +97,7 @@ app.post('/api/generate', async (req, res) => {
     }
 });
 
+// Simple GET route for health check
 app.get('/', (req, res) => {
     res.send('Student Helper Backend is running!');
 });
