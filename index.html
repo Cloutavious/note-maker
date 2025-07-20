@@ -92,12 +92,14 @@
     <p id="form-error" class="mt-4 text-center text-red-600 hidden">Error sending request. Please try again.</p>
   </div>
 
-  <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script type="text/javascript">
     // Wait for EmailJS to be available
     function initEmailJS() {
       if (typeof emailjs !== 'undefined') {
-        emailjs.init("SZtnPFlIhtW6GmA5z");
+        emailjs.init({
+          publicKey: "SZtnPFlIhtW6GmA5z"
+        });
         console.log('EmailJS initialized successfully');
       } else {
         setTimeout(initEmailJS, 100); // Try again in 100ms
