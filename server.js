@@ -1,200 +1,124 @@
+// server.js
+
 const express = require('express');
-const cors = require('cors');
 const bodyParser = require('body-parser');
-const axios = require('axios');
+const cors = require('cors');
 const nodemailer = require('nodemailer');
+
+// Import the Anthropic SDK
+const Anthropic = require('@anthropic-ai/sdk');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// --- Middleware ---
-// Configure CORS to only allow requests from your GitHub Pages domain
-const corsOptions = {
-  origin: 'https://cloutavious.github.io', // Your GitHub Pages base domain
-  methods: ['POST'], // Only allow POST requests for your API endpoint
-  optionsSuccessStatus: 200 // For older browsers
-};
-app.use(cors(corsOptions)); // Apply the specific CORS options
+// Enable CORS for your GitHub Pages frontend
+app.use(cors({
+    origin: 'https://cloutavious.github.io/website.github.io/', // Ensure this matches your GitHub Pages URL
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type']
+}));
 
-app.use(bodyParser.json()); // To parse JSON request bodies
+app.use(bodyParser.json());
 
-// --- Environment Variables (Will be set on Render Dashboard) ---
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const EMAIL_SERVICE_HOST = process.env.EMAIL_SERVICE_HOST || 'smtp.gmail.com';
-const EMAIL_SERVICE_PORT = process.env.EMAIL_SERVICE_PORT || 587; // 587 for STARTTLS, 465 for SSL
-const EMAIL_AUTH_USER = process.env.EMAIL_AUTH_USER; // Your sending email (stapiso09@gmail.com)
-const EMAIL_AUTH_PASS = process.env.EMAIL_AUTH_PASS; // Your Gmail App Password
-
-// --- Nodemailer Transporter ---
-const transporter = nodemailer.createTransport({
-    host: EMAIL_SERVICE_HOST,
-    port: EMAIL_SERVICE_PORT,
-    secure: EMAIL_SERVICE_PORT === 465, // true for 465, false for other ports (like 587)
-    auth: {
-        user: EMAIL_AUTH_USER,
-        pass: EMAIL_AUTH_PASS,
-    },
+// Initialize the Anthropic client using the ANTHROPIC_API_KEY environment variable
+const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY, // Reads from the environment variable
 });
 
-// --- API Endpoint to handle form submissions ---
+// Nodemailer transporter setup (make sure these are also in your Render env variables)
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_AUTH_USER,
+        pass: process.env.EMAIL_AUTH_PASS
+    }
+});
+
 app.post('/api/generate', async (req, res) => {
     const { school, grade, subject, topic, format, notes_pages, papers_pages, email } = req.body;
 
-    if (!GOOGLE_API_KEY) {
-        console.error("Google API key is not set.");
-        return res.status(500).json({ error: "Server configuration error: Google API key missing." });
+    if (!school || !grade || !subject || !topic || !notes_pages || !papers_pages || !email) {
+        return res.status(400).json({ error: 'All form fields are required.' });
     }
-    if (!EMAIL_AUTH_USER || !EMAIL_AUTH_PASS) {
-        console.error("Email credentials are not set.");
-        return res.status(500).json({ error: "Server configuration error: Email credentials missing." });
-    }
-
-    // Ensure the entire prompt string is enclosed in backticks (` `)
-    const promptForLLM = `You are an educational content generator. Based on the student's request, provide comprehensive notes and a set of practice questions.
-        
-Student Request Details:
-School: ${school}
-Grade: Grade ${grade}
-Subject: ${subject}
-Topic: ${topic}
-Requested Notes Pages: ${notes_pages} (aim for this length if possible, generate detailed content)
-Requested Question Paper Formats: ${format}
-Requested Question Paper Pages: ${papers_pages} (aim for this length if possible, generate a good number of questions)
-
----
-**Notes Section:**
-(Provide detailed, educational notes for the specified topic and subject. Organize clearly with headings, subheadings, and bullet points. Include key concepts, definitions, formulas, examples, and explanations. Focus on comprehensive coverage suitable for the given grade level. The content should be extensive enough to fill approximately ${notes_pages} printed pages if formatted reasonably.)
-
----
-**Question Paper Section:**
-(Create a varied question paper covering the specified subject and topic. Include questions in the specified formats: ${format}. For 'True/False' or 'Fill in the Blank', provide clear statements. For 'Structured' or 'Short', provide open-ended questions that require critical thinking or application of concepts. Aim for a sufficient number of questions to fill approximately ${papers_pages} printed pages. Provide questions only, followed by a separate 'Answer Key' section at the very end. Ensure questions are challenging but fair for the specified grade level.)
-`; // <--- Make sure this closing backtick is present and correctly placed
 
     try {
-        // Call Google Gemini API
-        const geminiResponse = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${GOOGLE_API_KEY}`,
-            {
-                contents: [{ parts: [{ text: promptForLLM }] }],
-                generationConfig: {
-                    maxOutputTokens: 8192,
-                    temperature: 0.7
-                }
-            }
-        );
+        // Construct the prompt for Claude
+        const prompt = `
+        You are a helpful assistant for students.
+        Based on the following request, generate comprehensive notes and a practice question paper.
 
-        const generatedContent = geminiResponse.data.candidates[0].content.parts[0].text;
+        Student Request Details:
+        School: ${school}
+        Grade: ${grade}
+        Subject: ${subject}
+        Topic: ${topic}
+        Desired Notes Length: Approximately ${notes_pages} pages
+        Desired Question Paper Length: Approximately ${papers_pages} pages
+        Question Paper Formats (if specified): ${format}
 
-        // Simple parsing to separate Notes and Question Paper sections
-        let notesContent = "Notes could not be extracted. Here is the full generated content:\n" + generatedContent;
-        let questionPaperContent = "Question paper could not be extracted. Here is the full generated content:\n" + generatedContent;
+        ---
+        Please provide the content in two distinct sections:
 
-        const notesSectionTag = '**Notes Section:**';
-        const qpSectionTag = '**Question Paper Section:**';
-        const answerKeyTag = '**Answer Key:**';
+        **Section 1: Notes**
+        Generate comprehensive study notes for the specified topic, suitable for the given grade level. Structure the notes logically with clear headings and subheadings. Ensure the content covers key concepts, definitions, formulas (if applicable), and important examples.
 
-        const notesStart = generatedContent.indexOf(notesSectionTag);
-        const qpStart = generatedContent.indexOf(qpSectionTag);
-        const answerKeyStart = generatedContent.indexOf(answerKeyTag);
+        **Section 2: Question Paper**
+        Create a practice question paper based on the notes and topic. Include a variety of question types if specified (${format}). Ensure the difficulty is appropriate for the grade level. Provide clear instructions and allocate marks for each question. Include an answer key at the very end of this section.
+        ---
+        `;
 
-        if (notesStart !== -1) {
-            let notesEnd = generatedContent.length;
-            if (qpStart !== -1 && qpStart > notesStart) {
-                notesEnd = qpStart;
-            } else if (answerKeyStart !== -1 && answerKeyStart > notesStart) {
-                notesEnd = answerKeyStart;
-            }
-            notesContent = generatedContent.substring(notesStart + notesSectionTag.length, notesEnd).trim();
-        }
+        // Make the API call to Claude
+        const response = await anthropic.messages.create({
+            model: "claude-3-7-sonnet-20250219", // You can choose "claude-3-opus-20240229" for highest quality, "claude-3-haiku-20240307" for fastest, or "claude-3-5-sonnet-20241022" as a good balance.
+            max_tokens: 4000, // Adjust max_tokens based on expected output length (Claude tokens are different from Gemini/OpenAI). 4000 is a good starting point for a few pages.
+            messages: [{
+                role: "user",
+                content: prompt
+            }]
+        });
 
-        if (qpStart !== -1) {
-            let qpEnd = generatedContent.length;
-            if (answerKeyStart !== -1 && answerKeyStart > qpStart) {
-                qpEnd = answerKeyStart;
-            }
-            questionPaperContent = generatedContent.substring(qpStart + qpSectionTag.length, qpEnd).trim();
+        // Extract the generated text from Claude's response
+        const generatedContent = response.content[0].text; // Claude's response content is an array
 
-            if (answerKeyStart !== -1) {
-                questionPaperContent += "\n\n**Answer Key:**\n" + generatedContent.substring(answerKeyStart + answerKeyTag.length).trim();
-            }
-        }
-
-        // 4. Send Email to Stapiso (your email)
-        const mailOptionsToStapiso = {
-            from: EMAIL_AUTH_USER,
-            to: 'stapiso09@gmail.com',
-            subject: `New Request: ${subject} (Grade ${grade}) from ${school}`,
+        // Send content via email
+        const mailOptions = {
+            from: process.env.EMAIL_AUTH_USER,
+            to: email,
+            subject: `Your Requested Notes & Question Paper for ${subject} - ${topic} (Grade ${grade})`,
             html: `
-                <p>A new request has been submitted:</p>
-                <ul>
-                    <li><strong>School:</strong> ${school}</li>
-                    <li><strong>Grade:</strong> Grade ${grade}</li>
-                    <li><strong>Subject:</strong> ${subject}</li>
-                    <li><strong>Topic:</strong> ${topic}</li>
-                    <li><strong>Question Paper Format(s):</strong> ${format || 'Not specified'}</li>
-                    <li><strong>Requested Notes Pages:</strong> ${notes_pages}</li>
-                    <li><strong>Requested Question Paper Pages:</strong> ${papers_pages}</li>
-                    <li><strong>Student Email:</strong> ${email}</li>
-                </ul>
-                <hr>
-                <h2>Generated Notes:</h2>
-                <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">${notesContent}</pre>
-                <hr>
-                <h2>Generated Question Paper:</h2>
-                <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">${questionPaperContent}</pre>
-                <hr>
-                <p>Generated by AI based on student request.</p>
-            `,
+                <p>Dear student,</p>
+                <p>Here are your requested notes and question paper:</p>
+                <pre>${generatedContent}</pre>
+                <p>Best regards,</p>
+                <p>Your Student Helper</p>
+            `
         };
 
-        // 5. Send Email to Student
-        const mailOptionsToStudent = {
-            from: EMAIL_AUTH_USER,
-            to: email, // Student's email
-            subject: `Your Requested Notes & Question Papers for ${subject}`,
-            html: `
-                <p>Dear Student,</p>
-                <p>Here are the notes and question papers you requested for <strong>${subject} - ${topic} (Grade ${grade})</strong> from your school <strong>${school}</strong>.</p>
-                <p>We hope this helps with your studies!</p>
-                <hr>
-                <h2>Notes:</h2>
-                <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">${notesContent}</pre>
-                <hr>
-                <h2>Question Paper:</h2>
-                <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">${questionPaperContent}</pre>
-                <hr>
-                <p>Sincerely,</p>
-                <p>Your Study Helper Team</p>
-                <p><small>This content was generated by an AI model and may contain inaccuracies. Please review it carefully.</small></p>
-            `,
-        };
-
-        await transporter.sendMail(mailOptionsToStapiso);
-        await transporter.sendMail(mailOptionsToStudent);
-
-        console.log('Emails sent successfully!');
-        res.json({ message: 'Request processed and emails sent successfully!' });
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Email sending error:', error);
+                // Important: Only send 500 status if email sending is critical AND it's a server error
+                // Otherwise, you might still want to return 200 if content was generated but email failed
+                return res.status(500).json({ error: 'Failed to send email with generated content. Please check server logs.' });
+            } else {
+                console.log('Email sent: ' + info.response);
+                res.status(200).json({ message: 'Notes and question paper sent to your email!' });
+            }
+        });
 
     } catch (error) {
         console.error('Error processing request:', error.response ? error.response.data : error.message);
-        let errorMessage = 'Failed to process your request. Please try again.';
-        if (error.response && error.response.data && error.response.data.error && error.response.data.error.message) {
-            errorMessage = `AI Generation Error: ${error.response.data.error.message}`;
-        } else if (error.message.includes('ECONNECTION')) {
-            errorMessage = 'Email sending error: Could not connect to email server. Check credentials/port.';
-        } else if (error.message.includes('Authentication failed')) {
-            errorMessage = 'Email sending error: Authentication failed. Check your App Password.';
-        }
+        const errorMessage = error.response && error.response.data && error.response.data.error && error.response.data.error.message
+            ? error.response.data.error.message
+            : 'Error generating content. Please try again.';
         res.status(500).json({ error: errorMessage });
     }
 });
 
-// Basic route for the root to avoid "Cannot GET /"
 app.get('/', (req, res) => {
-    res.send('Backend server is running. Send POST requests to /api/generate.');
+    res.send('Student Helper Backend is running!');
 });
 
-// Start the server
 app.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
 });
