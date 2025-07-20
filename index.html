@@ -14,15 +14,7 @@
         overflow-x: auto;
     }
   </style>
-<script type="text/javascript" src="https://cdn.emailjs.com/sdk/v4/email.min.js"></script>
-  <script type="text/javascript">
-    (function() {
-      // Initialize EmailJS with your Public Key
-      // You'll get this from your EmailJS dashboard: Account -> API Keys
-      emailjs.init("dcXh3C-JmfcsSOOIb"); // <--- REPLACE WITH YOUR ACTUAL EMAILJS PUBLIC KEY
-    })();
-  </script>
-</head>
+  </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
   <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
     <h2 class="text-2xl font-bold mb-6 text-center">Request Notes & Question Papers</h2>
@@ -100,7 +92,16 @@
     <p id="form-error" class="mt-4 text-center text-red-600 hidden">Error sending request. Please try again.</p>
   </div>
 
- <script>
+  <script type="text/javascript" src="https://cdn.emailjs.com/sdk/v4/email.min.js"></script>
+  <script type="text/javascript">
+    // Initialize EmailJS AFTER the SDK script has loaded
+    // This function will now run only after the DOM is fully loaded, ensuring emailjs is defined.
+    document.addEventListener('DOMContentLoaded', function() {
+        emailjs.init("dcXh3C-JmfcsSOOIb"); // <--- REPLACE WITH YOUR ACTUAL EMAILJS PUBLIC KEY
+    });
+  </script>
+
+  <script>
   document.getElementById("request-form").addEventListener("submit", function (event) {
     event.preventDefault();
 
@@ -137,22 +138,19 @@
     })
     .then(res => {
         if (!res.ok) {
-            // If backend responds with an error, parse it and reject the promise
             return res.json().then(errData => Promise.reject(errData));
         }
-        return res.json(); // Parse the successful response from backend
+        return res.json();
     })
     .then(data => {
-      // Check if generatedText is present from backend's response
       if (data.generatedText) {
-        // Prepare data for EmailJS template
         const templateParams = {
           to_email: formData.email,
           from_school: formData.school,
           from_grade: formData.grade,
           from_subject: formData.subject,
           from_topic: formData.topic,
-          generated_content: data.generatedText // This is the AI-generated content
+          generated_content: data.generatedText
         };
 
         // Send email using EmailJS
@@ -162,16 +160,16 @@
             console.log('EmailJS Success!', response.status, response.text);
             document.getElementById("form-message").classList.remove("hidden");
             document.getElementById("form-error").classList.add("hidden");
-            document.getElementById("request-form").reset(); // Reset form on success
+            document.getElementById("request-form").reset();
           }, function(error) {
             console.error('EmailJS Failed...', error);
+            // This error 'r' is still often related to incorrect EmailJS IDs or template issues.
             document.getElementById("form-error").textContent = "Error sending email via EmailJS. Please check your EmailJS setup.";
             document.getElementById("form-error").classList.remove("hidden");
             document.getElementById("form-message").classList.add("hidden");
           });
 
       } else {
-        // This case implies backend didn't return generatedText as expected
         console.error("Backend did not return generated content.");
         document.getElementById("form-error").textContent = "Error processing request: No content received from backend.";
         document.getElementById("form-error").classList.remove("hidden");
@@ -179,7 +177,6 @@
       }
     })
     .catch(err => {
-      // Catch any errors from the fetch call itself or errors propagated from backend
       console.error("Frontend fetch error or backend general error:", err);
       const errorMessage = err.error ? err.error : "Error sending request. Please check your inputs and try again.";
       document.getElementById("form-error").textContent = errorMessage;
@@ -187,7 +184,6 @@
       document.getElementById("form-message").classList.add("hidden");
     })
     .finally(() => {
-        // Re-enable button and reset text regardless of success or failure
         submitButton.textContent = "Submit Request";
         submitButton.disabled = false;
     });
