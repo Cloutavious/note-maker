@@ -1,20 +1,19 @@
 {
   "name": "note-maker",
   "version": "1.0.0",
-  "description": "Backend for student notes and question paper requests using Google Gemini API and email.",
+  "description": "Student Helper Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
-    "axios": "^1.7.2",
-    "body-parser": "^1.20.2",
-    "cors": "^2.8.5",
     "express": "^4.19.2",
-    "nodemailer": "^6.9.14"
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5"
+    // "nodemailer": "^6.9.14" // REMOVED: No longer using Nodemailer
   },
   "keywords": [],
-  "author": "Your Name",
+  "author": "",
   "license": "ISC"
 }
